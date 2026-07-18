@@ -82,22 +82,22 @@ def build_research_graph():
 
     # --- Build graph ---
 
-    graph.add_node("plan", plan_node)
-    graph.add_node("research", research_node)
+    graph.add_node("planner", plan_node)
+    graph.add_node("researcher", research_node)
     graph.add_node("approval_gate", approval_gate)
-    graph.add_node("summarize", summarize_node)
+    graph.add_node("summarizer", summarize_node)
 
-    graph.set_entry_point("plan")
-    graph.add_edge("plan", "research")
-    graph.add_conditional_edges("research", should_wait_for_approval, {
-        "summarize": "summarize",
+    graph.set_entry_point("planner")
+    graph.add_edge("planner", "researcher")
+    graph.add_conditional_edges("researcher", should_wait_for_approval, {
+        "summarizer": "summarizer",
         "approval_gate": "approval_gate",
     })
     graph.add_conditional_edges("approval_gate", check_approval, {
-        "summarize": "summarize",
+        "summarizer": "summarizer",
         END: END,
     })
-    graph.add_edge("summarize", END)
+    graph.add_edge("summarizer", END)
 
     return graph.compile()
 

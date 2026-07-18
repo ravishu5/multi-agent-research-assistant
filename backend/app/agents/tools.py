@@ -1,7 +1,6 @@
 """Tools available to research agents."""
 
 import httpx
-import asyncio
 from app.config import get_settings
 
 
@@ -21,12 +20,11 @@ async def _gemini_search(query: str, max_results: int) -> list[dict]:
     Use Gemini to generate search-like results.
     In production, swap this for a real search API (SerpAPI, Tavily, etc).
     """
-    import google.generativeai as genai
+    from google.genai import types
+    from app.agents.gemini import client
     from app.config import get_settings
 
     settings = get_settings()
-    genai.configure(api_key=settings.google_api_key)
-    model = genai.GenerativeModel(settings.llm_model)
 
     prompt = f"""You are a research search engine. For the query below, return {max_results} relevant results.
 
@@ -40,10 +38,10 @@ Return ONLY a valid JSON array. Each object must have:
 
 Return pure JSON, no markdown fences."""
 
-    response = await asyncio.to_thread(
-        model.generate_content,
-        prompt,
-        generation_config=genai.types.GenerationConfig(
+    response = await client.aio.models.generate_content(
+        model=settings.llm_model,
+        contents=prompt,
+        config=types.GenerateContentConfig(
             temperature=0.2,
             max_output_tokens=2000,
         ),

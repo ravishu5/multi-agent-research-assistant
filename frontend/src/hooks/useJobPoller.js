@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../api/client';
 
-const TERMINAL = new Set(['completed', 'failed', 'awaiting_approval']);
+const STOP_POLLING = new Set(['completed', 'failed']);
+const FETCH_RESULT_ON = new Set(['completed', 'awaiting_approval']);
 
 export function useJobPoller(jobId, interval = 2000) {
   const [status, setStatus] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const timerRef = useRef(null);
+  const resultFetchedForRef = useRef(null);
 
   const stopPolling = useCallback(() => {
     if (timerRef.current) {
@@ -21,21 +23,28 @@ export function useJobPoller(jobId, interval = 2000) {
 
     setError(null);
     setResult(null);
+    resultFetchedForRef.current = null;
 
     const poll = async () => {
       try {
         const s = await api.getStatus(jobId);
         setStatus(s);
 
-        if (TERMINAL.has(s.status)) {
+        if (STOP_POLLING.has(s.status)) {
           stopPolling();
-          if (s.status === 'completed' || s.status === 'awaiting_approval') {
-            try {
-              const r = await api.getResult(jobId);
-              setResult(r);
-            } catch {
-              // result not ready yet for awaiting_approval — that's okay
-            }
+        }
+
+        // awaiting_approval is not a stopping point — after the user
+        // approves/rejects, the job keeps moving (summarizing -> completed),
+        // so polling must continue. Only (re-)fetch the result when the
+        // status actually changes, to avoid hammering the endpoint every tick.
+        if (FETCH_RESULT_ON.has(s.status) && resultFetchedForRef.current !== s.status) {
+          resultFetchedForRef.current = s.status;
+          try {
+            const r = await api.getResult(jobId);
+            setResult(r);
+          } catch {
+            // result not ready yet for awaiting_approval — that's okay
           }
         }
       } catch (e) {

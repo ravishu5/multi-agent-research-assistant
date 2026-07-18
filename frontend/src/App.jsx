@@ -32,10 +32,8 @@ export default function App() {
     if (!jobId) return;
     try {
       await api.approveJob(jobId, approved, feedback);
-      // Re-trigger polling by setting the same jobId
-      setJobId((prev) => prev);
-      // Force a fresh poll cycle
-      window.location.reload();
+      // Polling continues on its own past awaiting_approval, so no
+      // manual re-trigger is needed here.
     } catch (e) {
       setSubmitError(e.message);
     }

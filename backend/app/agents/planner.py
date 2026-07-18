@@ -1,8 +1,8 @@
 """Planner agent: decomposes a research query into sub-questions and search queries."""
 
 import json
-import asyncio
-import google.generativeai as genai
+from google.genai import types
+from app.agents.gemini import client
 from app.models import GraphState, ResearchPlan, AgentRole
 from app.config import get_settings
 from app.tracing import RequestTracer
@@ -30,18 +30,16 @@ Return ONLY valid JSON (no markdown fences) with this structure:
 async def run_planner(state: GraphState, tracer: RequestTracer) -> GraphState:
     """Generate a research plan from the user's query."""
     settings = get_settings()
-    genai.configure(api_key=settings.google_api_key)
-    model = genai.GenerativeModel(settings.llm_model)
 
     with tracer.trace_agent(
         AgentRole.PLANNER, "generate_plan", input_summary=state.query[:100]
     ) as trace:
         prompt = PLANNER_PROMPT.format(query=state.query, depth=state.depth)
 
-        response = await asyncio.to_thread(
-            model.generate_content,
-            prompt,
-            generation_config=genai.types.GenerationConfig(
+        response = await client.aio.models.generate_content(
+            model=settings.llm_model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
                 temperature=settings.llm_temperature,
                 max_output_tokens=1500,
             ),

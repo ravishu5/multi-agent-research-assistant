@@ -1,7 +1,8 @@
 """Researcher agent: executes search queries and compiles source findings."""
 
 import asyncio
-import google.generativeai as genai
+from google.genai import types
+from app.agents.gemini import client
 from app.models import GraphState, SourceResult, AgentRole
 from app.config import get_settings
 from app.tracing import RequestTracer
@@ -11,7 +12,6 @@ from app.agents.tools import web_search
 async def run_researcher(state: GraphState, tracer: RequestTracer) -> GraphState:
     """Execute search queries from the plan and compile findings."""
     settings = get_settings()
-    genai.configure(api_key=settings.google_api_key)
 
     all_sources: list[SourceResult] = []
 
@@ -64,8 +64,6 @@ async def run_researcher(state: GraphState, tracer: RequestTracer) -> GraphState
         "synthesize_findings",
         input_summary=f"{len(state.sources)} sources",
     ) as trace:
-        model = genai.GenerativeModel(settings.llm_model)
-
         source_text = "\n\n".join(
             f"[Source {i+1}] {s.title}\n{s.snippet}"
             for i, s in enumerate(state.sources)
@@ -83,10 +81,10 @@ Sub-questions to address:
 
 Write a thorough analysis (500-1500 words depending on depth: {state.depth})."""
 
-        response = await asyncio.to_thread(
-            model.generate_content,
-            prompt,
-            generation_config=genai.types.GenerationConfig(
+        response = await client.aio.models.generate_content(
+            model=settings.llm_model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
                 temperature=0.3,
                 max_output_tokens=settings.llm_max_tokens,
             ),

@@ -1,7 +1,9 @@
 """Application configuration via environment variables."""
 
 from pydantic_settings import BaseSettings
+from pydantic import Field, AliasChoices
 from functools import lru_cache
+from pathlib import Path
 
 
 class Settings(BaseSettings):
@@ -13,7 +15,7 @@ class Settings(BaseSettings):
 
     # LLM
     google_api_key: str = ""
-    llm_model: str = "gemini-2.0-flash"
+    llm_model: str = "gemini-3.1-flash-lite"
     llm_temperature: float = 0.3
     llm_max_tokens: int = 4096
 
@@ -32,7 +34,10 @@ class Settings(BaseSettings):
     max_output_length: int = 10000
     hallucination_threshold: float = 0.7
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {
+        "env_file": Path(__file__).resolve().parent.parent / ".env",
+        "env_file_encoding": "utf-8",
+    }
 
 
 @lru_cache

@@ -1,0 +1,24 @@
+# Secrets — never bake these into an image layer
+.env*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# VCS / IDE / OS
+.git/
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Project tooling not needed at runtime
+Dockerfile
+.dockerignore
